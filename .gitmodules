@@ -1,0 +1,3 @@
+[submodule "nrf-ble-template"]
+	path = nrf-ble-template
+	url = git@github.com:dossalab/nrf-ble-template.git
