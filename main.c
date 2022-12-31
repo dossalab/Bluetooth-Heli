@@ -1,6 +1,7 @@
 #include <nrf_gpio.h>
 
 #include "ble.h"
+#include "controls.h"
 
 #define LED_PIN		27
 
@@ -40,6 +41,7 @@ int main(void)
 {
 	led_init();
 	ble_c_init();
+	controls_init();
 
 	for (;;) {
 		sd_app_evt_wait();

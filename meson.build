@@ -7,5 +7,6 @@ subdir('nrf-ble-template')
 
 executable('ble_copter',
            'main.c',
+           'controls.c',
            link_with : nrf_sdk,
            include_directories : nrf_sdk_inc)
