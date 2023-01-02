@@ -6,9 +6,13 @@
 #define CONTROLS_SERVICE_UUID		0x53D3
 #define CONTROLS_CHAR_UUID		0x53D4
 
+/* Ignore values lower than that so it's easier to disarm */
+#define MOTOR_LOW_THRESHOLD		20
+#define RUDDER_SENSITIVITY_PRESCALER	2
+
 typedef struct {
 	uint8_t throttle;
-	uint8_t rudder;
+	int8_t rudder;
 	uint8_t elevator;
 
 	uint8_t reserved;
@@ -27,14 +31,15 @@ static void handle_controls_packet(control_packet *packet)
 	int motor1, motor2;
 
 	motor1 = motor2 = packet->throttle;
-	motor1 -= packet->rudder;
-	motor2 += packet->rudder;
 
-	if (motor1 < 0) {
+	motor1 -= packet->rudder / RUDDER_SENSITIVITY_PRESCALER;
+	motor2 += packet->rudder / RUDDER_SENSITIVITY_PRESCALER;
+
+	if (motor1 < MOTOR_LOW_THRESHOLD) {
 		motor1 = 0;
 	}
 
-	if (motor2 < 0) {
+	if (motor2 < MOTOR_LOW_THRESHOLD) {
 		motor2 = 0;
 	}
 

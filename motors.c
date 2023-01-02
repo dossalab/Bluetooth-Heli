@@ -12,11 +12,8 @@
 #define MOTORS_PWM_CLOCK	NRF_PWM_CLK_125kHz
 
 /* PWM channel to pin mapping */
-
-/* FIXME - this is the LED pin, but I don't want to connect motors at this point :) */
-#define MOTOR1_PIN		27
-
-#define MOTOR2_PIN		28
+#define MOTOR1_PIN		4
+#define MOTOR2_PIN		3
 #define MOTOR1_PWM_CHANNEL	0
 #define MOTOR2_PWM_CHANNEL	1
 
@@ -53,7 +50,7 @@ static inline void motors_pwm_write_buffer(uint16_t *ptr, uint16_t val) {
  */
 static nrf_pwm_sequence_t motors_pwm_sequence = {
 	.values.p_individual = &motors_pwm_buffer,
-	.length = 1,
+	.length = NRF_PWM_VALUES_LENGTH(motors_pwm_buffer),
 	.repeats = 0,
 	.end_delay = 0,
 };
@@ -62,9 +59,8 @@ static void motors_pwm_configure(NRF_PWM_Type *base)
 {
 	nrf_pwm_pins_set(base, motors_pwm_pins);
 	nrf_pwm_sequence_set(base, 0, &motors_pwm_sequence);
-	nrf_pwm_decoder_set(base, NRF_PWM_LOAD_COMMON, NRF_PWM_STEP_AUTO);
+	nrf_pwm_decoder_set(base, NRF_PWM_LOAD_INDIVIDUAL, NRF_PWM_STEP_AUTO);
 	nrf_pwm_configure(base, MOTORS_PWM_CLOCK, NRF_PWM_MODE_UP, MOTORS_PWM_MAXVAL);
-	nrf_pwm_shorts_enable(base, NRF_PWM_SHORT_LOOPSDONE_SEQSTART0_MASK);
 	nrf_pwm_enable(base);
 }
 
