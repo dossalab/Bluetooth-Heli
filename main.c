@@ -2,6 +2,7 @@
 
 #include "ble.h"
 #include "controls.h"
+#include "motors.h"
 
 #define LED_PIN		27
 
@@ -18,11 +19,11 @@ static void connection_events_handler(ble_evt_t const *event, void *user)
 {
 	switch (event->header.evt_id) {
 	case BLE_GAP_EVT_CONNECTED:
-		led_switch(true);
+		// led_switch(true);
 		break;
 
 	case BLE_GAP_EVT_DISCONNECTED:
-		led_switch(false);
+		// led_switch(false);
 		break;
 	}
 }
@@ -32,14 +33,15 @@ NRF_SDH_BLE_OBSERVER(connection_observer, BLE_C_OBSERVERS_PRIORITY, connection_e
 void app_error_fault_handler(uint32_t id, uint32_t pc, uint32_t _info)
 {
 	__disable_irq();
-	led_switch(true);
+	// led_switch(true);
 
 	while(1);
 }
 
 int main(void)
 {
-	led_init();
+	// led_init();
+	motors_init();
 	ble_c_init();
 	controls_init();
 

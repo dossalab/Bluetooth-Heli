@@ -1,5 +1,7 @@
 #include <app_error.h>
+
 #include "ble.h"
+#include "motors.h"
 
 #define CONTROLS_SERVICE_UUID		0x53D3
 #define CONTROLS_CHAR_UUID		0x53D4
@@ -20,10 +22,31 @@ static const ble_uuid128_t controls_full_uuid = {
 static control_packet controls_char_init_value;
 static ble_gatts_char_handles_t controls_char_handle;
 
-static void handle_controls_write(const ble_gatts_evt_write_t *event)
+static void handle_controls_packet(control_packet *packet)
 {
-	if (event->handle == controls_char_handle.value_handle && event->len == sizeof(control_packet)) {
+	int motor1, motor2;
+
+	motor1 = motor2 = packet->throttle;
+	motor1 -= packet->rudder;
+	motor2 += packet->rudder;
+
+	if (motor1 < 0) {
+		motor1 = 0;
+	}
+
+	if (motor2 < 0) {
+		motor2 = 0;
+	}
+
+	motors_set(motor1, motor2);
+}
+
+static void handle_gatts_write(const ble_gatts_evt_write_t *event)
+{
+	if (event->handle == controls_char_handle.value_handle
+			&& event->len == sizeof(control_packet)) {
 		control_packet *packet = (void *)event->data;
+		handle_controls_packet(packet);
 	}
 }
 
@@ -31,7 +54,10 @@ static void handle_events(const ble_evt_t *event, void *user)
 {
 	switch (event->header.evt_id) {
 	case BLE_GATTS_EVT_WRITE:
-		handle_controls_write(&event->evt.gatts_evt.params.write);
+		handle_gatts_write(&event->evt.gatts_evt.params.write);
+		break;
+	case BLE_GAP_EVT_DISCONNECTED:
+		motors_set(0, 0);
 		break;
 	}
 }
