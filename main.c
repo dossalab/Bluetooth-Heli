@@ -34,6 +34,7 @@ NRF_SDH_BLE_OBSERVER(connection_observer, BLE_C_OBSERVERS_PRIORITY, connection_e
 void app_error_fault_handler(uint32_t id, uint32_t pc, uint32_t _info)
 {
 	__disable_irq();
+	motors_disarm();
 	led_switch(true);
 
 	while(1);

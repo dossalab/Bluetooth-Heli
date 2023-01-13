@@ -1,4 +1,5 @@
 #include <app_error.h>
+#include <stdlib.h>
 
 #include "ble.h"
 #include "motors.h"
@@ -13,7 +14,7 @@
 typedef struct {
 	uint8_t throttle;
 	int8_t rudder;
-	uint8_t elevator;
+	int8_t tail;
 
 	uint8_t reserved;
 } control_packet;
@@ -28,9 +29,10 @@ static ble_gatts_char_handles_t controls_char_handle;
 
 static void handle_controls_packet(control_packet *packet)
 {
-	int motor1, motor2;
+	int motor1, motor2, tail;
 
 	motor1 = motor2 = packet->throttle;
+	tail = packet->tail;
 
 	motor1 -= packet->rudder / RUDDER_SENSITIVITY_PRESCALER;
 	motor2 += packet->rudder / RUDDER_SENSITIVITY_PRESCALER;
@@ -43,7 +45,11 @@ static void handle_controls_packet(control_packet *packet)
 		motor2 = 0;
 	}
 
-	motors_set(motor1, motor2);
+	if (abs(tail) < MOTOR_LOW_THRESHOLD) {
+		tail = 0;
+	}
+
+	motors_set(motor1, motor2, tail);
 }
 
 static void handle_gatts_write(const ble_gatts_evt_write_t *event)
@@ -62,7 +68,7 @@ static void handle_events(const ble_evt_t *event, void *user)
 		handle_gatts_write(&event->evt.gatts_evt.params.write);
 		break;
 	case BLE_GAP_EVT_DISCONNECTED:
-		motors_set(0, 0);
+		motors_disarm();
 		break;
 	}
 }
