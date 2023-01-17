@@ -11,6 +11,15 @@
 #define ADC_IRQ_PRIORITY		6
 
 /*
+ * Those pins are connected to nPM1100 and may be used to sense the
+ * battery failure and charger status
+ *
+ * Both of those are open drain and require pullups (hence the value is inverted)
+ */
+#define PMIC_CHARGE_DETECT_PIN		11
+#define PMIC_FAILURE_DETECT_PIN		12
+
+/*
  * Timer and PPI are used to start the ADC measure sequence
  * Higher PPI channels are reserved by the SoftDevice - see nrf_soc.h for more details
  * Timer0 is reserved by the Softdevice as well
@@ -145,11 +154,6 @@ static void battery_adc_start_calibrate(void)
 	nrf_saadc_task_trigger(NRF_SAADC_TASK_CALIBRATEOFFSET);
 }
 
-static void battery_adc_start_measure(void)
-{
-	nrf_saadc_task_trigger(NRF_SAADC_TASK_START);
-}
-
 static void battery_adc_init(void)
 {
 	nrf_saadc_channel_config_t config = {
@@ -163,8 +167,6 @@ static void battery_adc_init(void)
 		.gain = ADC_PRESCALER_TO_GAIN(BATTERY_ADC_PRESCALER),
 		.reference = NRF_SAADC_REFERENCE_INTERNAL,
 	};
-
-	nrf_gpio_pin_dir_set(BATTERY_DIVIDER_ENABLE_PIN, NRF_GPIO_PIN_DIR_OUTPUT);
 
 	nrf_saadc_enable();
 	nrf_saadc_oversample_set(NRF_SAADC_OVERSAMPLE_128X);
@@ -216,8 +218,17 @@ static void battery_service_init(void)
 	APP_ERROR_CHECK(err_code);
 }
 
+static void power_management_gpio_init(void)
+{
+	nrf_gpio_pin_dir_set(BATTERY_DIVIDER_ENABLE_PIN, NRF_GPIO_PIN_DIR_OUTPUT);
+
+	/* Wakeup if charger is connected */
+	nrf_gpio_cfg_sense_input(PMIC_CHARGE_DETECT_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
+}
+
 void power_management_init(void)
 {
+	power_management_gpio_init();
 	battery_service_init();
 	battery_adc_init();
 	battery_timer_init();
