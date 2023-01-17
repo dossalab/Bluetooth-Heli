@@ -8,7 +8,7 @@
 #define CONTROLS_CHAR_UUID		0x53D4
 
 /* Ignore values lower than that so it's easier to disarm */
-#define MOTOR_LOW_THRESHOLD		20
+#define MOTOR_LOW_THRESHOLD		10
 #define RUDDER_SENSITIVITY_PRESCALER	2
 
 typedef struct {
