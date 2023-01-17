@@ -20,44 +20,45 @@
 #define EVENT_TIMER_FREQUENCY		NRF_TIMER_FREQ_125kHz
 
 /* If we're not connected there is no point of polling peripherals that often */
-#define EVENT_TIMER_PERIOD_FAST_MS	500U
-#define EVENT_TIMER_PERIOD_SLOW_MS	2000U
+#define EVENT_TIMER_PERIOD_FAST_MS	300U
+#define EVENT_TIMER_PERIOD_SLOW_MS	10000U
 
-static void timer_mode_fast(void)
-{
-	nrf_timer_task_trigger(EVENT_TIMER, NRF_TIMER_TASK_CLEAR);
-	nrf_timer_cc_write(EVENT_TIMER, 0, \
-		nrf_timer_ms_to_ticks(EVENT_TIMER_PERIOD_FAST_MS, EVENT_TIMER_FREQUENCY));
-}
+static bool charger_connected, ble_connected;
 
-static void timer_mode_slow(void)
+static void timer_mode_update(void)
 {
+	uint32_t ticks;
+
+	__COMPILER_BARRIER();
+	if (charger_connected || ble_connected) {
+		ticks = nrf_timer_ms_to_ticks(EVENT_TIMER_PERIOD_FAST_MS, EVENT_TIMER_FREQUENCY);
+	} else {
+		ticks = nrf_timer_ms_to_ticks(EVENT_TIMER_PERIOD_SLOW_MS, EVENT_TIMER_FREQUENCY);
+	}
+
 	nrf_timer_task_trigger(EVENT_TIMER, NRF_TIMER_TASK_CLEAR);
-	nrf_timer_cc_write(EVENT_TIMER, 0, \
-		nrf_timer_ms_to_ticks(EVENT_TIMER_PERIOD_SLOW_MS, EVENT_TIMER_FREQUENCY));
+	nrf_timer_cc_write(EVENT_TIMER, NRF_TIMER_CC_CHANNEL0, ticks);
 }
 
 static void connection_events_handler(ble_evt_t const *event, void *user)
 {
 	switch (event->header.evt_id) {
 	case BLE_GAP_EVT_CONNECTED:
-		timer_mode_fast();
+		ble_connected = true;
 		break;
 
 	case BLE_GAP_EVT_DISCONNECTED:
-		timer_mode_slow();
+		ble_connected = false;
 		break;
 	}
+
+	timer_mode_update();
 }
 
-/* If charger is connected we don't care about consumption - so move to fast mode */
-static void charger_event_handler(bool charging)
+static void charger_event_handler(bool is_charging)
 {
-	if (charging) {
-		timer_mode_fast();
-	} else {
-		timer_mode_slow();
-	}
+	charger_connected = is_charging;
+	timer_mode_update();
 }
 
 NRF_SDH_BLE_OBSERVER(connection_observer, BLE_C_OBSERVERS_PRIORITY, connection_events_handler, NULL);
@@ -77,7 +78,7 @@ void event_timer_init(void)
 	/* Make timer count from 0 to compare channel 0, clear on compare */
 	nrf_timer_shorts_enable(EVENT_TIMER, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK);
 
-	timer_mode_slow();
+	timer_mode_update();
 	nrf_timer_task_trigger(EVENT_TIMER, NRF_TIMER_TASK_START);
 }
 
