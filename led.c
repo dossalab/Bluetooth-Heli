@@ -2,7 +2,7 @@
 #include <nrf_gpiote.h>
 #include <nrf_ppi.h>
 
-#include "ppi-map.h"
+#include "ppi-gpiote-map.h"
 #include "timer.h"
 
 #define LED_PIN			27

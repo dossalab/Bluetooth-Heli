@@ -4,22 +4,13 @@
 #include <nrf_gpio.h>
 
 #include "timer.h"
-#include "ppi-map.h"
+#include "ppi-gpiote-map.h"
 
 /*
  * This must be lower than SoftDevice IRQ priorities, otherwise we'll get stuck
  * while caling Bluetooth-related APIs from the IRQ context
  */
 #define ADC_IRQ_PRIORITY		6
-
-/*
- * Those pins are connected to nPM1100 and may be used to sense the
- * battery failure and charger status
- *
- * Both of those are open drain and require pullups (hence the value is inverted)
- */
-#define PMIC_CHARGE_DETECT_PIN		11
-#define PMIC_FAILURE_DETECT_PIN		12
 
 #define BATTERY_ADC_CHANNEL		1
 #define BATTERY_ADC_INPUT		NRF_SAADC_INPUT_AIN0
@@ -160,6 +151,8 @@ static void battery_adc_init(void)
 		.reference = NRF_SAADC_REFERENCE_INTERNAL,
 	};
 
+	nrf_gpio_pin_dir_set(BATTERY_DIVIDER_ENABLE_PIN, NRF_GPIO_PIN_DIR_OUTPUT);
+
 	nrf_saadc_enable();
 	nrf_saadc_oversample_set(NRF_SAADC_OVERSAMPLE_128X);
 	nrf_saadc_resolution_set(ADC_BITS_TO_RESOLUTION(ADC_RESOLUTION_BITS));
@@ -174,7 +167,7 @@ static void battery_adc_init(void)
 	battery_adc_start_calibrate();
 }
 
-static void battery_ppi_hookup(void)
+static void battery_adc_ppi_hookup(void)
 {
 	nrf_ppi_channel_endpoint_setup(PPI_ADC_CHANNEL,
 			(uint32_t)event_timer_overflow_event_address_get(),
@@ -200,19 +193,9 @@ static void battery_service_init(void)
 	APP_ERROR_CHECK(err_code);
 }
 
-static void power_management_gpio_init(void)
+void battery_monitor_init(void)
 {
-	nrf_gpio_pin_dir_set(BATTERY_DIVIDER_ENABLE_PIN, NRF_GPIO_PIN_DIR_OUTPUT);
-
-	/* Wakeup if charger is connected */
-	nrf_gpio_cfg_sense_input(PMIC_CHARGE_DETECT_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
-}
-
-void power_management_init(void)
-{
-	power_management_gpio_init();
 	battery_service_init();
 	battery_adc_init();
-
-	battery_ppi_hookup();
+	battery_adc_ppi_hookup();
 }

@@ -1,5 +1,7 @@
 #include <nrf_timer.h>
+
 #include "ble.h"
+#include "extint.h"
 
 /*
  * This module is intended to be used together with PPI to generate events
@@ -48,7 +50,18 @@ static void connection_events_handler(ble_evt_t const *event, void *user)
 	}
 }
 
+/* If charger is connected we don't care about consumption - so move to fast mode */
+static void charger_event_handler(bool charging)
+{
+	if (charging) {
+		timer_mode_fast();
+	} else {
+		timer_mode_slow();
+	}
+}
+
 NRF_SDH_BLE_OBSERVER(connection_observer, BLE_C_OBSERVERS_PRIORITY, connection_events_handler, NULL);
+EXTINT_CHARGER_EVENT_HANDLER(charger_event_handler);
 
 uint32_t *event_timer_overflow_event_address_get(void)
 {
