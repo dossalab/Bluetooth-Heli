@@ -7,6 +7,7 @@
 #include "led.h"
 
 #define MAX_CONNECTION_INTERVAL		MSEC_TO_UNITS(20, UNIT_1_25_MS)
+#define SUPERVISION_INTERVAL		MSEC_TO_UNITS(500, UNIT_1_25_MS)
 
 static void connection_events_handler(ble_evt_t const *event, void *user)
 {
@@ -39,6 +40,7 @@ int main(void)
 	motors_init();
 	ble_c_init();
 	ble_c_set_max_connection_interval(MAX_CONNECTION_INTERVAL);
+	ble_c_set_supervision_timeout(SUPERVISION_INTERVAL);
 	controls_init();
 	power_management_init();
 
