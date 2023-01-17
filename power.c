@@ -2,7 +2,9 @@
 #include <nrf_saadc.h>
 #include <nrf_ppi.h>
 #include <nrf_gpio.h>
-#include <nrf_timer.h>
+
+#include "timer.h"
+#include "ppi-map.h"
 
 /*
  * This must be lower than SoftDevice IRQ priorities, otherwise we'll get stuck
@@ -18,16 +20,6 @@
  */
 #define PMIC_CHARGE_DETECT_PIN		11
 #define PMIC_FAILURE_DETECT_PIN		12
-
-/*
- * Timer and PPI are used to start the ADC measure sequence
- * Higher PPI channels are reserved by the SoftDevice - see nrf_soc.h for more details
- * Timer0 is reserved by the Softdevice as well
- */
-#define ADC_TIMER			NRF_TIMER1
-#define ADC_TIMER_PERIOD_MS		2000U
-#define ADC_TIMER_FREQUENCY		NRF_TIMER_FREQ_125kHz
-#define ADC_PPI_CHANNEL			0
 
 #define BATTERY_ADC_CHANNEL		1
 #define BATTERY_ADC_INPUT		NRF_SAADC_INPUT_AIN0
@@ -182,22 +174,12 @@ static void battery_adc_init(void)
 	battery_adc_start_calibrate();
 }
 
-static void battery_timer_init(void)
+static void battery_ppi_hookup(void)
 {
-	nrf_timer_frequency_set(ADC_TIMER, ADC_TIMER_FREQUENCY);
-	nrf_timer_mode_set(ADC_TIMER, NRF_TIMER_MODE_TIMER);
-	nrf_timer_bit_width_set(ADC_TIMER, NRF_TIMER_BIT_WIDTH_32);
-
-	/* Make timer count from 0 to compare channel 0, clear on compare */
-	nrf_timer_cc_write(ADC_TIMER, 0, nrf_timer_ms_to_ticks(ADC_TIMER_PERIOD_MS, ADC_TIMER_FREQUENCY));
-	nrf_timer_shorts_enable(ADC_TIMER, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK);
-
-	nrf_ppi_channel_endpoint_setup(ADC_PPI_CHANNEL,
-			(uint32_t)nrf_timer_event_address_get(ADC_TIMER, NRF_TIMER_EVENT_COMPARE0),
+	nrf_ppi_channel_endpoint_setup(PPI_ADC_CHANNEL,
+			(uint32_t)event_timer_overflow_event_address_get(),
 			(uint32_t)nrf_saadc_task_address_get(NRF_SAADC_TASK_START));
-	nrf_ppi_channel_enable(ADC_PPI_CHANNEL);
-
-	nrf_timer_task_trigger(ADC_TIMER, NRF_TIMER_TASK_START);
+	nrf_ppi_channel_enable(PPI_ADC_CHANNEL);
 }
 
 static void battery_service_init(void)
@@ -231,5 +213,6 @@ void power_management_init(void)
 	power_management_gpio_init();
 	battery_service_init();
 	battery_adc_init();
-	battery_timer_init();
+
+	battery_ppi_hookup();
 }

@@ -10,5 +10,6 @@ executable('ble_copter',
            'controls.c',
            'motors.c',
            'power.c',
+           'timer.c',
            link_with : nrf_sdk,
            include_directories : nrf_sdk_inc)

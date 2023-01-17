@@ -4,6 +4,7 @@
 #include "controls.h"
 #include "motors.h"
 #include "power.h"
+#include "timer.h"
 
 #define LED_PIN		27
 #define MAX_CONNECTION_INTERVAL		MSEC_TO_UNITS(20, UNIT_1_25_MS)
@@ -49,6 +50,7 @@ int main(void)
 	ble_c_set_max_connection_interval(MAX_CONNECTION_INTERVAL);
 	controls_init();
 	power_management_init();
+	event_timer_init();
 
 	for (;;) {
 		sd_app_evt_wait();
