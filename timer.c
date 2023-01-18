@@ -1,5 +1,7 @@
-#include <nrf_timer.h>
+#include <nrf_ppi.h>
+#include <nrf_rtc.h>
 
+#include "ppi-gpiote-map.h"
 #include "ble.h"
 #include "extint.h"
 
@@ -8,36 +10,55 @@
  * for different peripherals - for example for battery measurements.
  *
  * We could've used multiple timers or even the app_timer instead, but this
- * approach is more battery-saving, since there is only one hardware timer running
+ * approach is more battery-saving, since there is only one hardware RTC running
  * and there is almost no CPU involvment because of the PPI.
  *
- * Timer0 and higher PPI channels are reserved by the SoftDevice -
+ * RTC0 and higher PPI channels are reserved by the SoftDevice -
  * see nrf_soc.h header and SoftDevice specification for more details.
  * Some channels in that range are even preprogrammed and can't be changed at all.
  */
 
-#define EVENT_TIMER			NRF_TIMER1
-#define EVENT_TIMER_FREQUENCY		NRF_TIMER_FREQ_125kHz
+#define EVENT_RTC			NRF_RTC1
 
-/* If we're not connected there is no point of polling peripherals that often */
-#define EVENT_TIMER_PERIOD_FAST_MS	300U
-#define EVENT_TIMER_PERIOD_SLOW_MS	10000U
+/*
+ * We can't set how fast overflows are occuring, since the TOP value is fixed. However,
+ * we can use compare event and emulate the overflow by connecting it to the clear task
+ */
+#define EVENT_RTC_COMPARE_CLEAR_CHANNEL	0
+
+/*
+ * When we are connected to a charger or when the user opens a connection we can
+ * start polling peripherals more often - in such cases we don't care about the battery
+ *
+ * The lowest frequency that prescaler will allow us to go is 8 Hz
+ */
+
+#define EVENT_RTC_FREQ_HZ		8
+
+#define RTC_MS_TO_TICKS(ms)		((ms) * EVENT_RTC_FREQ_HZ / 1000U)
+
+#define EVENT_RTC_PERIOD_FASTER_TICKS	RTC_MS_TO_TICKS(125U)
+#define EVENT_RTC_PERIOD_FAST_TICKS	RTC_MS_TO_TICKS(500U)
+#define EVENT_RTC_PERIOD_SLOW_TICKS	RTC_MS_TO_TICKS(60000U)
 
 static bool charger_connected, ble_connected;
 
-static void timer_mode_update(void)
+static void rtc_mode_update(void)
 {
 	uint32_t ticks;
 
 	__COMPILER_BARRIER();
-	if (charger_connected || ble_connected) {
-		ticks = nrf_timer_ms_to_ticks(EVENT_TIMER_PERIOD_FAST_MS, EVENT_TIMER_FREQUENCY);
+
+	if (charger_connected && ble_connected) {
+		ticks = EVENT_RTC_PERIOD_FASTER_TICKS;
+	} else if (charger_connected || ble_connected) {
+		ticks = EVENT_RTC_PERIOD_FAST_TICKS;
 	} else {
-		ticks = nrf_timer_ms_to_ticks(EVENT_TIMER_PERIOD_SLOW_MS, EVENT_TIMER_FREQUENCY);
+		ticks = EVENT_RTC_PERIOD_SLOW_TICKS;
 	}
 
-	nrf_timer_task_trigger(EVENT_TIMER, NRF_TIMER_TASK_CLEAR);
-	nrf_timer_cc_write(EVENT_TIMER, NRF_TIMER_CC_CHANNEL0, ticks);
+	nrf_rtc_cc_set(EVENT_RTC, EVENT_RTC_COMPARE_CLEAR_CHANNEL, ticks);
+	nrf_rtc_task_trigger(EVENT_RTC, NRF_RTC_TASK_CLEAR);
 }
 
 static void connection_events_handler(ble_evt_t const *event, void *user)
@@ -52,33 +73,35 @@ static void connection_events_handler(ble_evt_t const *event, void *user)
 		break;
 	}
 
-	timer_mode_update();
+	rtc_mode_update();
 }
 
 static void charger_event_handler(bool is_charging)
 {
 	charger_connected = is_charging;
-	timer_mode_update();
+	rtc_mode_update();
 }
 
 NRF_SDH_BLE_OBSERVER(connection_observer, BLE_C_OBSERVERS_PRIORITY, connection_events_handler, NULL);
 EXTINT_CHARGER_EVENT_HANDLER(charger_event_handler);
 
-uint32_t *event_timer_overflow_event_address_get(void)
+uint32_t event_timer_overflow_event_address_get(void)
 {
-	return nrf_timer_event_address_get(EVENT_TIMER, NRF_TIMER_EVENT_COMPARE0);
+	return nrf_rtc_event_address_get(EVENT_RTC,
+		nrf_rtc_compare_event_get(EVENT_RTC_COMPARE_CLEAR_CHANNEL));
 }
 
 void event_timer_init(void)
 {
-	nrf_timer_frequency_set(EVENT_TIMER, EVENT_TIMER_FREQUENCY);
-	nrf_timer_mode_set(EVENT_TIMER, NRF_TIMER_MODE_TIMER);
-	nrf_timer_bit_width_set(EVENT_TIMER, NRF_TIMER_BIT_WIDTH_32);
+	nrf_rtc_prescaler_set(EVENT_RTC, RTC_FREQ_TO_PRESCALER(EVENT_RTC_FREQ_HZ));
+	nrf_rtc_event_enable(EVENT_RTC, RTC_CHANNEL_INT_MASK(EVENT_RTC_COMPARE_CLEAR_CHANNEL));
 
-	/* Make timer count from 0 to compare channel 0, clear on compare */
-	nrf_timer_shorts_enable(EVENT_TIMER, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK);
+	/* RTC lacks compare -> clear shortcut, so emulate it using PPI */
+	nrf_ppi_channel_endpoint_setup(PPI_RTC_COMPARE_CLEAR_CHANNEL,
+		nrf_rtc_event_address_get(EVENT_RTC, nrf_rtc_compare_event_get(EVENT_RTC_COMPARE_CLEAR_CHANNEL)),
+		nrf_rtc_task_address_get(EVENT_RTC, NRF_RTC_TASK_CLEAR));
+	nrf_ppi_channel_enable(PPI_RTC_COMPARE_CLEAR_CHANNEL);
 
-	timer_mode_update();
-	nrf_timer_task_trigger(EVENT_TIMER, NRF_TIMER_TASK_START);
+	rtc_mode_update();
+	nrf_rtc_task_trigger(EVENT_RTC, NRF_RTC_TASK_START);
 }
-

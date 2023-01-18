@@ -170,7 +170,7 @@ static void battery_adc_init(void)
 static void battery_adc_ppi_hookup(void)
 {
 	nrf_ppi_channel_endpoint_setup(PPI_ADC_CHANNEL,
-			(uint32_t)event_timer_overflow_event_address_get(),
+			event_timer_overflow_event_address_get(),
 			(uint32_t)nrf_saadc_task_address_get(NRF_SAADC_TASK_START));
 	nrf_ppi_channel_enable(PPI_ADC_CHANNEL);
 }

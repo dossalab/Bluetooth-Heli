@@ -55,7 +55,7 @@ void led_init(void)
 	nrf_gpiote_task_enable(GPIOTE_LED_CHANNEL);
 
 	nrf_ppi_channel_endpoint_setup(PPI_LED_CHANNEL,
-			(uint32_t)event_timer_overflow_event_address_get(),
+			event_timer_overflow_event_address_get(),
 			(uint32_t)nrf_gpiote_task_addr_get(nrf_gpiote_out_task_get(GPIOTE_LED_CHANNEL)));
 
 	led_state_update();
