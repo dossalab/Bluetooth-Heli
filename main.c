@@ -12,14 +12,6 @@
 #define MAX_CONNECTION_INTERVAL		MSEC_TO_UNITS(20, UNIT_1_25_MS)
 #define SUPERVISION_INTERVAL		MSEC_TO_UNITS(500, UNIT_1_25_MS)
 
-void app_error_fault_handler(uint32_t id, uint32_t pc, uint32_t _info)
-{
-	__disable_irq();
-	motors_disarm();
-
-	while(1);
-}
-
 int main(void)
 {
 	event_timer_init();
