@@ -7,6 +7,7 @@
 #include "timer.h"
 #include "led.h"
 #include "extint.h"
+#include "version.h"
 
 #define MAX_CONNECTION_INTERVAL		MSEC_TO_UNITS(20, UNIT_1_25_MS)
 #define SUPERVISION_INTERVAL		MSEC_TO_UNITS(500, UNIT_1_25_MS)
@@ -29,6 +30,7 @@ int main(void)
 	ble_c_set_supervision_timeout(SUPERVISION_INTERVAL);
 	controls_init();
 	battery_monitor_init();
+	version_service_init();
 	external_interrupts_init();
 
 	for (;;) {

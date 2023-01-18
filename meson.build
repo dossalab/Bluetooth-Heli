@@ -11,6 +11,11 @@ add_global_link_arguments(
 subdir('nrf-ble-template/targets/nrf52832')
 subdir('nrf-ble-template')
 
+version_info_header = vcs_tag(
+            command: ['git', 'describe', '--always', '--dirty', '--tags'],
+            input : 'version.h.in',
+            output : 'version.h')
+
 executable('ble_copter',
            'main.c',
            'controls.c',
@@ -19,5 +24,7 @@ executable('ble_copter',
            'timer.c',
            'led.c',
            'extint.c',
+           version_info_header,
+           'version.c',
            link_with : nrf_sdk,
            include_directories : nrf_sdk_inc)

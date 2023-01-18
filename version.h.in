@@ -1,0 +1,5 @@
+#pragma once
+
+#define SW_VERSION		"git-@VCS_TAG@"
+
+void version_service_init(void);
