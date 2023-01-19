@@ -1,5 +1,7 @@
 #pragma once
 
-#define SW_VERSION		"git-@VCS_TAG@"
+#define DEVICE_MANUFACTURER_STRING	"Cringe Computers"
+#define DEVICE_MODEL_STRING			"Syma S107g"
+#define SW_VERSION_STRING			"git-@VCS_TAG@"
 
 void version_service_init(void);
