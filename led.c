@@ -23,19 +23,19 @@ static void led_state_update(void)
 	}
 }
 
-static void connection_events_handler(ble_evt_t const *event, void *user)
+static void ble_events_handler(ble_evt_t const *event, void *user)
 {
 	switch (event->header.evt_id) {
 	case BLE_GAP_EVT_CONNECTED:
 		ble_connected = true;
+		led_state_update();
 		break;
 
 	case BLE_GAP_EVT_DISCONNECTED:
 		ble_connected = false;
+		led_state_update();
 		break;
 	}
-
-	led_state_update();
 }
 
 static void charger_event_handler(bool is_charging)
@@ -44,7 +44,7 @@ static void charger_event_handler(bool is_charging)
 	led_state_update();
 }
 
-NRF_SDH_BLE_OBSERVER(connection_observer, BLE_C_OBSERVERS_PRIORITY, connection_events_handler, NULL);
+NRF_SDH_BLE_OBSERVER(connection_observer, BLE_C_OBSERVERS_PRIORITY, ble_events_handler, NULL);
 EXTINT_CHARGER_EVENT_HANDLER(charger_event_handler);
 
 void led_init(void)

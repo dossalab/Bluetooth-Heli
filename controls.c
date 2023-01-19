@@ -61,7 +61,7 @@ static void handle_gatts_write(const ble_gatts_evt_write_t *event)
 	}
 }
 
-static void handle_events(const ble_evt_t *event, void *user)
+static void ble_events_handler(const ble_evt_t *event, void *user)
 {
 	switch (event->header.evt_id) {
 	case BLE_GATTS_EVT_WRITE:
@@ -73,7 +73,7 @@ static void handle_events(const ble_evt_t *event, void *user)
 	}
 }
 
-NRF_SDH_BLE_OBSERVER(controls_service_observer, BLE_C_OBSERVERS_PRIORITY, handle_events, NULL);
+NRF_SDH_BLE_OBSERVER(controls_service_observer, BLE_C_OBSERVERS_PRIORITY, ble_events_handler, NULL);
 
 static void controls_service_init(void)
 {
