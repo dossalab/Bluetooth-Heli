@@ -8,8 +8,8 @@
 #define CONTROLS_CHAR_UUID		0x53D4
 
 /* Ignore values lower than that so it's easier to disarm */
-#define MOTOR_LOW_THRESHOLD		10
-#define RUDDER_SENSITIVITY_PRESCALER	2
+#define MOTOR_LOW_THRESHOLD		15
+#define RUDDER_SENSITIVITY_PRESCALER	4
 
 typedef struct {
 	uint8_t throttle;
@@ -27,6 +27,16 @@ static const ble_uuid128_t controls_full_uuid = {
 static control_packet controls_char_init_value;
 static ble_gatts_char_handles_t controls_char_handle;
 
+static inline void motor_pwm_range_check(int *value) {
+	if (*value < MOTOR_LOW_THRESHOLD) {
+		*value = 0;
+	}
+
+	if (*value > MOTORS_PWM_MAXVAL) {
+		*value = MOTORS_PWM_MAXVAL;
+	}
+}
+
 static void handle_controls_packet(control_packet *packet)
 {
 	int motor1, motor2, tail;
@@ -34,16 +44,11 @@ static void handle_controls_packet(control_packet *packet)
 	motor1 = motor2 = packet->throttle;
 	tail = packet->tail;
 
-	motor1 -= packet->rudder / RUDDER_SENSITIVITY_PRESCALER;
-	motor2 += packet->rudder / RUDDER_SENSITIVITY_PRESCALER;
+	motor1 += packet->rudder / RUDDER_SENSITIVITY_PRESCALER;
+	motor2 -= packet->rudder / RUDDER_SENSITIVITY_PRESCALER;
 
-	if (motor1 < MOTOR_LOW_THRESHOLD) {
-		motor1 = 0;
-	}
-
-	if (motor2 < MOTOR_LOW_THRESHOLD) {
-		motor2 = 0;
-	}
+	motor_pwm_range_check(&motor1);
+	motor_pwm_range_check(&motor2);
 
 	if (abs(tail) < MOTOR_LOW_THRESHOLD) {
 		tail = 0;
