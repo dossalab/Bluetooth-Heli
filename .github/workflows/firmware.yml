@@ -1,0 +1,20 @@
+name: 'Firmware build'
+
+on: push
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install apt dependencies
+      run: sudo apt-get install meson ninja-build gcc-arm-none-eabi
+    - name: Checkout source
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Checkout NRF52 SDK
+      uses: dossalab/nrf-ble-template@master
+    - name: Build
+      run: |
+        meson build --cross-file=nrf-ble-template/scripts/arm-none-eabi.build
+        ninja -C build
