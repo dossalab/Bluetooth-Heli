@@ -27,5 +27,4 @@ executable('ble_copter',
            version_info_header,
            'version.c',
            'error-handlers.c',
-           link_with : nrf_sdk,
-           include_directories : nrf_sdk_inc)
+           dependencies : nrf_sdk_dep)
