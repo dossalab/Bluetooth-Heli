@@ -24,7 +24,8 @@ executable('ble_copter',
            'timer.c',
            'led.c',
            'extint.c',
+           'nfc.c',
            version_info_header,
            'version.c',
            'error-handlers.c',
-           dependencies : nrf_sdk_dep)
+           dependencies: [ nrf_sdk_dep, nrf_nfc_dep ])

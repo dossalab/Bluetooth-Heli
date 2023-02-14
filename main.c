@@ -8,6 +8,7 @@
 #include "led.h"
 #include "extint.h"
 #include "version.h"
+#include "nfc.h"
 
 #define MAX_CONNECTION_INTERVAL		MSEC_TO_UNITS(20, UNIT_1_25_MS)
 #define SUPERVISION_INTERVAL		MSEC_TO_UNITS(500, UNIT_1_25_MS)
@@ -24,6 +25,7 @@ int main(void)
 	event_timer_init();
 	led_init();
 	motors_init();
+	nfc_init();
 
 	ble_init();
 	controls_init();
