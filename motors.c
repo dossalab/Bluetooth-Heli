@@ -9,12 +9,12 @@
  * Only one of the H-bridge halves has PWM on it.
  * Another half is controlled by this GPIO.
  */
-#define TAIL_GPIO_PIN		5
+#define TAIL_GPIO_PIN		4
 
 /* PWM channel to pin mapping */
-#define MOTOR1_PIN		4
-#define MOTOR2_PIN		3
-#define TAIL_PWM_PIN		6
+#define MOTOR1_PIN		1
+#define MOTOR2_PIN		2
+#define TAIL_PWM_PIN		3
 #define MOTOR1_PWM_CHANNEL	0
 #define MOTOR2_PWM_CHANNEL	1
 #define TAIL_PWM_CHANNEL	2

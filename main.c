@@ -8,6 +8,7 @@
 #include "led.h"
 #include "extint.h"
 #include "version.h"
+#include "gyro.h"
 
 #define MAX_CONNECTION_INTERVAL		MSEC_TO_UNITS(20, UNIT_1_25_MS)
 #define SUPERVISION_INTERVAL		MSEC_TO_UNITS(500, UNIT_1_25_MS)
@@ -27,6 +28,7 @@ int main(void)
 
 	ble_init();
 	controls_init();
+	gyro_init();
 	battery_monitor_init();
 	version_service_init();
 	external_interrupts_init();
