@@ -1,7 +1,7 @@
 #include <nrf_ppi.h>
 #include <nrf_rtc.h>
 
-#include "ppi-gpiote-map.h"
+#include "resource-map.h"
 #include "ble.h"
 #include "extint.h"
 

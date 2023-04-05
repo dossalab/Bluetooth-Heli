@@ -4,7 +4,7 @@
 
 #include "ble.h"
 #include "timer.h"
-#include "ppi-gpiote-map.h"
+#include "resource-map.h"
 #include "irq-prio.h"
 
 #define	_adc_bits_to_resolution(x)	NRF_SAADC_RESOLUTION_##x##BIT

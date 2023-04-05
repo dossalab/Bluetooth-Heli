@@ -3,7 +3,7 @@
 #include <nrf_ppi.h>
 
 #include "ble.h"
-#include "ppi-gpiote-map.h"
+#include "resource-map.h"
 #include "timer.h"
 #include "extint.h"
 

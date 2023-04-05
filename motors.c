@@ -12,8 +12,8 @@
 #define TAIL_GPIO_PIN		4
 
 /* PWM channel to pin mapping */
-#define MOTOR1_PIN		1
-#define MOTOR2_PIN		2
+#define MOTOR1_PIN		2
+#define MOTOR2_PIN		1
 #define TAIL_PWM_PIN		3
 #define MOTOR1_PWM_CHANNEL	0
 #define MOTOR2_PWM_CHANNEL	1

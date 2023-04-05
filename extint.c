@@ -2,7 +2,7 @@
 #include <nrf_gpiote.h>
 
 #include "extint.h"
-#include "ppi-gpiote-map.h"
+#include "resource-map.h"
 
 #define _gpiote_channel_to_int(x)		NRF_GPIOTE_INT_IN##x##_MASK
 #define GPIOTE_CHANNEL_TO_INT(channel)		_gpiote_channel_to_int(channel)
