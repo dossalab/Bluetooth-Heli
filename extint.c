@@ -11,15 +11,6 @@
 
 NRF_SECTION_SET_DEF(EXTINT_CHARGER_EVENT_SECTION, extint_charger_event_handler, 1);
 
-/*
- * Those pins are connected to nPM1100 and may be used to sense the
- * battery failure and charger status
- *
- * Both of those are open drain and require pullups (hence the value is inverted)
- */
-#define PMIC_CHARGE_DETECT_PIN		11
-#define PMIC_FAILURE_DETECT_PIN		12
-
 static void notify_charger_event_observers(bool charging)
 {
 	nrf_section_iter_t iter;

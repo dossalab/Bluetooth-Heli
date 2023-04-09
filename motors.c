@@ -1,20 +1,14 @@
 #include <nrf_pwm.h>
 #include <nrf_gpio.h>
-#include "motors.h"
 
-#define MOTORS_PWM		NRF_PWM0
+#include "motors.h"
+#include "resource-map.h"
+
+static NRF_PWM_Type * const pwm = MOTORS_PWM;
+
 #define MOTORS_PWM_CLOCK	NRF_PWM_CLK_125kHz
 
-/*
- * Only one of the H-bridge halves has PWM on it.
- * Another half is controlled by this GPIO.
- */
-#define TAIL_GPIO_PIN		4
-
 /* PWM channel to pin mapping */
-#define MOTOR1_PIN		2
-#define MOTOR2_PIN		1
-#define TAIL_PWM_PIN		3
 #define MOTOR1_PWM_CHANNEL	0
 #define MOTOR2_PWM_CHANNEL	1
 #define TAIL_PWM_CHANNEL	2
@@ -58,15 +52,6 @@ static nrf_pwm_sequence_t motors_pwm_sequence = {
 	.end_delay = 0,
 };
 
-static void motors_pwm_configure(NRF_PWM_Type *base)
-{
-	nrf_pwm_pins_set(base, motors_pwm_pins);
-	nrf_pwm_sequence_set(base, 0, &motors_pwm_sequence);
-	nrf_pwm_decoder_set(base, NRF_PWM_LOAD_INDIVIDUAL, NRF_PWM_STEP_AUTO);
-	nrf_pwm_configure(base, MOTORS_PWM_CLOCK, NRF_PWM_MODE_UP, MOTORS_PWM_MAXVAL);
-	nrf_pwm_enable(base);
-}
-
 void motors_set(uint8_t motor1, uint8_t motor2, int8_t tail)
 {
 	write_pwm(MOTOR1_PWM_CHANNEL, motor1);
@@ -81,7 +66,7 @@ void motors_set(uint8_t motor1, uint8_t motor2, int8_t tail)
 		nrf_gpio_pin_clear(TAIL_GPIO_PIN);
 	}
 
-	nrf_pwm_task_trigger(MOTORS_PWM, NRF_PWM_TASK_SEQSTART0);
+	nrf_pwm_task_trigger(pwm, NRF_PWM_TASK_SEQSTART0);
 }
 
 void motors_disarm(void)
@@ -89,10 +74,18 @@ void motors_disarm(void)
 	motors_set(0, 0, 0);
 }
 
+static void motors_pwm_init(void)
+{
+	nrf_pwm_pins_set(pwm, motors_pwm_pins);
+	nrf_pwm_sequence_set(pwm, 0, &motors_pwm_sequence);
+	nrf_pwm_decoder_set(pwm, NRF_PWM_LOAD_INDIVIDUAL, NRF_PWM_STEP_AUTO);
+	nrf_pwm_configure(pwm, MOTORS_PWM_CLOCK, NRF_PWM_MODE_UP, MOTORS_PWM_MAXVAL);
+	nrf_pwm_enable(pwm);
+}
+
 void motors_init(void)
 {
 	nrf_gpio_pin_dir_set(TAIL_GPIO_PIN, NRF_GPIO_PIN_DIR_OUTPUT);
-	motors_pwm_configure(MOTORS_PWM);
-
+	motors_pwm_init();
 	motors_disarm();
 }

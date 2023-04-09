@@ -17,18 +17,8 @@
 #define ADC_RANGE			(1U << ((ADC_RESOLUTION_BITS) - 1))
 
 #define GYRO_ADC_CHANNEL		1
-#define GYRO_POWER_ENABLE_PIN		26
 
 static nrf_saadc_value_t gyro_measurement_result;
-
-/*
- * ENC-03 represents angular speed as a voltage output relative to its VREF,
- * Luckily for us NRF52's ADC has differential inputs, so we can directly measure
- * the signal relative to the reference.
- */
-
-#define GYRO_ADC_MEASUREMENT_INPUT	NRF_SAADC_INPUT_AIN4
-#define GYRO_ADC_REFERENCE_INPUT	NRF_SAADC_INPUT_AIN5
 
 static inline int32_t measurement_to_angular_speed(nrf_saadc_value_t value) {
 	int32_t mv = value * ADC_RESOLUTION_BITS / ADC_INTERNAL_VREF_MV;

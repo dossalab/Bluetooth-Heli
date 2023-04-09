@@ -7,7 +7,6 @@
 #include "timer.h"
 #include "extint.h"
 
-#define LED_PIN			0
 #define LED_INIT_VALUE		NRF_GPIOTE_INITIAL_VALUE_LOW
 
 static bool ble_connected, charger_connected;
