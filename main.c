@@ -4,9 +4,7 @@
 #include "controls.h"
 #include "motors.h"
 #include "battery.h"
-#include "timer.h"
 #include "led.h"
-#include "extint.h"
 #include "version.h"
 #include "gyro.h"
 
@@ -22,7 +20,6 @@ static void ble_init(void)
 
 int main(void)
 {
-	event_timer_init();
 	led_init();
 	motors_init();
 
@@ -31,7 +28,6 @@ int main(void)
 	gyro_init();
 	battery_monitor_init();
 	version_service_init();
-	external_interrupts_init();
 
 	for (;;) {
 		sd_app_evt_wait();

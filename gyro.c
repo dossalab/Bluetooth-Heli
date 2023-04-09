@@ -3,7 +3,6 @@
 #include <nrf_gpio.h>
 
 #include "ble.h"
-#include "timer.h"
 #include "resource-map.h"
 #include "irq-prio.h"
 
@@ -94,7 +93,8 @@ static void gyro_adc_init(void)
 
 	nrf_saadc_int_enable(NRF_SAADC_INT_STARTED | NRF_SAADC_INT_END
 		| NRF_SAADC_INT_STOPPED | NRF_SAADC_INT_CALIBRATEDONE);
-	NVIC_SetPriority(SAADC_IRQn, ADC_IRQ_PRIORITY);
+
+	NVIC_SetPriority(SAADC_IRQn, USER_IRQ_PRIORITY);
 	NVIC_EnableIRQ(SAADC_IRQn);
 
 	adc_start_calibrate();
@@ -105,12 +105,10 @@ static void ble_events_handler(ble_evt_t const *event, void *user)
 	switch (event->header.evt_id) {
 	case BLE_GAP_EVT_CONNECTED:
 		gyro_power_enable();
-		nrf_ppi_channel_enable(PPI_ADC_CHANNEL);
 		break;
 
 	case BLE_GAP_EVT_DISCONNECTED:
 		gyro_power_disable();
-		nrf_ppi_channel_disable(PPI_ADC_CHANNEL);
 		break;
 	}
 }
@@ -119,8 +117,5 @@ NRF_SDH_BLE_OBSERVER(gyro_connection_observer, BLE_C_OBSERVERS_PRIORITY, ble_eve
 
 void gyro_init(void)
 {
-	nrf_ppi_channel_endpoint_setup(PPI_ADC_CHANNEL,
-			event_timer_overflow_event_address_get(),
-			(uint32_t)nrf_saadc_task_address_get(NRF_SAADC_TASK_START));
 	gyro_adc_init();
 }

@@ -2,13 +2,18 @@
 #include <app_error.h>
 #include <nrf_twim.h>
 #include <nrf_gpio.h>
+#include <nrf_gpiote.h>
 #include <nrf_atomic.h>
+#include <nrf_rtc.h>
 
 #include "resource-map.h"
 #include "irq-prio.h"
+#include "led.h"
 
 static NRF_TWIM_Type * const twi = BATTERY_GAUGE_TWI;
+static NRF_RTC_Type * const rtc = PMIC_MONITOR_RTC;
 
+#define PMIC_MONITOR_FREQ_HZ		8
 #define BATTERY_GAUGE_TWI_FREQUENCY	NRF_TWIM_FREQ_100K
 #define BATTERY_GAUGE_TWI_ADDRESS	0x55
 
@@ -26,6 +31,14 @@ static uint8_t twi_command_buffer;
 static uint16_t twi_response_buffer;
 
 BLE_BAS_DEF(battery_service);
+
+static inline bool pmic_is_charging(void) {
+	return !nrf_gpio_pin_read(PMIC_CHARGE_DETECT_PIN);
+}
+
+static inline bool pmic_is_failure(void) {
+	return !nrf_gpio_pin_read(PMIC_FAILURE_DETECT_PIN);
+}
 
 static bool battery_gauge_twi_busy(void)
 {
@@ -83,6 +96,39 @@ void BATTERY_GAUGE_TWI_IRQ_HANDLER(void)
 	}
 }
 
+
+void PMIC_MONITOR_RTC_IRQ_HANDLER(void)
+{
+	if (nrf_rtc_event_pending(rtc, NRF_RTC_EVENT_TICK)) {
+		nrf_rtc_event_clear(rtc, NRF_RTC_EVENT_TICK);
+
+		if (!pmic_is_charging() && !pmic_is_failure()) {
+			led_off();
+			nrf_rtc_task_trigger(rtc, NRF_RTC_TASK_STOP);
+		}
+
+		if (pmic_is_failure()) {
+			led_on();
+		} else if (pmic_is_charging()) {
+			led_toggle();
+		}
+	}
+}
+
+/*
+ * TODO: in the future we might need to share this IRQ handler with others.
+ */
+void GPIOTE_IRQHandler(void)
+{
+	if (nrf_gpiote_event_is_set(NRF_GPIOTE_EVENTS_PORT)) {
+		nrf_gpiote_event_clear(NRF_GPIOTE_EVENTS_PORT);
+
+		if (pmic_is_charging() || pmic_is_failure()) {
+			nrf_rtc_task_trigger(rtc, NRF_RTC_TASK_START);
+		}
+	}
+}
+
 static void battery_service_init(void)
 {
 	ret_code_t err_code;
@@ -101,6 +147,25 @@ static void battery_service_init(void)
 	APP_ERROR_CHECK(err_code);
 }
 
+/*
+ * After we detect charge or failure we want to let user know what is happening
+ * So prepare RTC here and run it later to monitor status and blink LED
+ */
+static void pmic_monitor_init(void)
+{
+	nrf_gpio_cfg_sense_input(PMIC_CHARGE_DETECT_PIN,
+			NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
+	nrf_gpio_cfg_sense_input(PMIC_FAILURE_DETECT_PIN,
+			NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
+
+	nrf_rtc_prescaler_set(rtc, RTC_FREQ_TO_PRESCALER(PMIC_MONITOR_FREQ_HZ));
+	nrf_rtc_int_enable(rtc, NRF_RTC_INT_TICK_MASK);
+	nrf_rtc_task_trigger(rtc, NRF_RTC_TASK_START);
+
+	NVIC_SetPriority(PMIC_MONITOR_RTC_IRQN, USER_IRQ_PRIORITY);
+	NVIC_EnableIRQ(PMIC_MONITOR_RTC_IRQN);
+}
+
 static void battery_gauge_twi_init(void)
 {
 	nrf_twim_pins_set(twi, BATTERY_GAUGE_PIN_TWI_SCL, BATTERY_GAUGE_PIN_TWI_SDA);
@@ -116,7 +181,7 @@ static void battery_gauge_twi_init(void)
 
 	nrf_twim_enable(BATTERY_GAUGE_TWI);
 
-	NVIC_SetPriority(BATTERY_GAUGE_TWI_NVIC_IRQN, TWI_IRQ_PRIORITY);
+	NVIC_SetPriority(BATTERY_GAUGE_TWI_NVIC_IRQN, USER_IRQ_PRIORITY);
 	NVIC_EnableIRQ(BATTERY_GAUGE_TWI_NVIC_IRQN);
 }
 
@@ -132,5 +197,10 @@ static void battery_gauge_init(void)
 void battery_monitor_init(void)
 {
 	battery_service_init();
+	pmic_monitor_init();
 	battery_gauge_init();
+
+	nrf_gpiote_int_enable(NRF_GPIOTE_INT_PORT_MASK);
+	NVIC_SetPriority(GPIOTE_IRQn, USER_IRQ_PRIORITY);
+	NVIC_EnableIRQ(GPIOTE_IRQn);
 }
