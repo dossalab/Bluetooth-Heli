@@ -3,7 +3,7 @@
 #include "ble.h"
 #include "controls.h"
 #include "motors.h"
-#include "battery.h"
+#include "power.h"
 #include "led.h"
 #include "version.h"
 #include "gyro.h"
@@ -26,7 +26,7 @@ int main(void)
 	ble_init();
 	controls_init();
 	gyro_init();
-	battery_monitor_init();
+	power_module_init();
 	version_service_init();
 
 	for (;;) {

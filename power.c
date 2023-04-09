@@ -194,7 +194,7 @@ static void battery_gauge_init(void)
 	battery_gauge_send_command(BQ27427_CMD_SOC);
 }
 
-void battery_monitor_init(void)
+void power_module_init(void)
 {
 	battery_service_init();
 	pmic_monitor_init();
