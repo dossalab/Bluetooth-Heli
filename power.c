@@ -53,6 +53,8 @@ static bool battery_gauge_send_command(battery_gauge_command_t command)
 	}
 
 	twi_command_buffer = command;
+
+	nrf_twim_enable(twi);
 	nrf_twim_task_trigger(twi, NRF_TWIM_TASK_STARTTX);
 
 	return true;
@@ -85,6 +87,7 @@ void BATTERY_GAUGE_TWI_IRQ_HANDLER(void)
 		nrf_twim_errorsrc_get_and_clear(twi);
 
 		nrf_atomic_u32_add(&twi_error_counter, 1);
+		nrf_twim_disable(twi);
 	}
 
 	if (nrf_twim_event_check(twi, NRF_TWIM_EVENT_STOPPED)) {
@@ -93,6 +96,8 @@ void BATTERY_GAUGE_TWI_IRQ_HANDLER(void)
 		if (nrf_twim_rxd_amount_get(twi) == sizeof(twi_response_buffer)) {
 			battery_gauge_parse_response();
 		}
+
+		nrf_twim_disable(twi);
 	}
 }
 
@@ -178,8 +183,6 @@ static void battery_gauge_twi_init(void)
 	nrf_twim_int_enable(twi, NRF_TWIM_INT_STOPPED_MASK | NRF_TWIM_INT_ERROR_MASK);
 	nrf_twim_shorts_enable(twi, NRF_TWIM_SHORT_LASTTX_STARTRX_MASK
 			| NRF_TWIM_SHORT_LASTRX_STOP_MASK);
-
-	nrf_twim_enable(BATTERY_GAUGE_TWI);
 
 	NVIC_SetPriority(BATTERY_GAUGE_TWI_NVIC_IRQN, USER_IRQ_PRIORITY);
 	NVIC_EnableIRQ(BATTERY_GAUGE_TWI_NVIC_IRQN);
