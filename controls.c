@@ -19,7 +19,7 @@ typedef struct {
 	uint8_t reserved;
 } control_packet;
 
-static const ble_uuid128_t controls_full_uuid = {
+static const ble_uuid128_t controls_base_uuid = {
 	.uuid128 = { 0xEE, 0x10, 0x0c, 0x37, 0x14, 0x94, 0x4a, 0x17, \
 		0xB0, 0x1D, 0x7F, 0x20, 0x00, 0x00, 0xD4, 0x05 }
 };
@@ -85,10 +85,7 @@ static void controls_service_init(void)
 	ret_code_t err;
 	uint16_t service_handle;
 
-	ble_uuid_t ble_service_uuid = {
-		.uuid = CONTROLS_SERVICE_UUID,
-		/* .type will be filled in by sd_ble_uuid_vs_add */
-	};
+	service_handle = ble_c_create_service(controls_base_uuid, CONTROLS_SERVICE_UUID);
 
 	ble_add_char_params_t controls_char_params = {
 		.uuid             = CONTROLS_CHAR_UUID,
@@ -100,12 +97,6 @@ static void controls_service_init(void)
 		.read_access      = SEC_OPEN,
 		.write_access     = SEC_OPEN,
 	};
-
-	err = sd_ble_uuid_vs_add(&controls_full_uuid, &ble_service_uuid.type);
-	APP_ERROR_CHECK(err);
-
-	err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, \
-			&ble_service_uuid, &service_handle);
 
 	err = characteristic_add(service_handle, &controls_char_params, &controls_char_handle);
 	APP_ERROR_CHECK(err);
