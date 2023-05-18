@@ -56,3 +56,14 @@
 #define BATTERY_GAUGE_TWI		NRF_TWIM0
 #define BATTERY_GAUGE_TWI_NVIC_IRQN	SPIM0_SPIS0_TWIM0_TWIS0_SPI0_TWI0_IRQn
 #define BATTERY_GAUGE_TWI_IRQ_HANDLER	SPIM0_SPIS0_TWIM0_TWIS0_SPI0_TWI0_IRQHandler
+
+/*
+ * All of our custom services are using the same base UUID, which allows us to
+ * address them by simpler 16-bit identifiers
+ */
+
+#define CONTROLS_SERVICE_UUID		0x0001
+#define CONTROLS_CHAR_UUID		0x0002
+#define DEBUG_SERVICE_UUID		0x0101
+#define DEBUG_CHAR_UUID			0x0102
+

@@ -3,9 +3,7 @@
 
 #include "ble.h"
 #include "motors.h"
-
-#define CONTROLS_SERVICE_UUID		0x53D3
-#define CONTROLS_CHAR_UUID		0x53D4
+#include "resource-map.h"
 
 /* Ignore values lower than that so it's easier to disarm */
 #define MOTOR_LOW_THRESHOLD		15
@@ -19,12 +17,6 @@ typedef struct {
 	uint8_t reserved;
 } control_packet;
 
-static const ble_uuid128_t controls_base_uuid = {
-	.uuid128 = { 0xEE, 0x10, 0x0c, 0x37, 0x14, 0x94, 0x4a, 0x17, \
-		0xB0, 0x1D, 0x7F, 0x20, 0x00, 0x00, 0xD4, 0x05 }
-};
-
-static control_packet controls_char_init_value;
 static ble_gatts_char_handles_t controls_char_handle;
 
 static inline void motor_pwm_range_check(int *value) {
@@ -80,29 +72,29 @@ static void ble_events_handler(const ble_evt_t *event, void *user)
 
 NRF_SDH_BLE_OBSERVER(controls_service_observer, BLE_C_OBSERVERS_PRIORITY, ble_events_handler, NULL);
 
-static void controls_service_init(void)
+static void controls_service_init(unsigned base_uuid)
 {
 	ret_code_t err;
 	uint16_t service_handle;
 
-	service_handle = ble_c_create_service(controls_base_uuid, CONTROLS_SERVICE_UUID);
-
 	ble_add_char_params_t controls_char_params = {
 		.uuid             = CONTROLS_CHAR_UUID,
 		.max_len          = sizeof(control_packet),
-		.init_len         = sizeof(control_packet),
-		.p_init_value     = (void *)&controls_char_init_value,
+		.init_len         = 0,
+		.p_init_value     = NULL,
 		.char_props.read  = 1,
 		.char_props.write = 1,
 		.read_access      = SEC_OPEN,
 		.write_access     = SEC_OPEN,
 	};
 
+	service_handle = ble_c_create_service(base_uuid, CONTROLS_SERVICE_UUID);
+
 	err = characteristic_add(service_handle, &controls_char_params, &controls_char_handle);
 	APP_ERROR_CHECK(err);
 }
 
-void controls_init(void)
+void controls_init(unsigned base_uuid)
 {
-	controls_service_init();
+	controls_service_init(base_uuid);
 }
